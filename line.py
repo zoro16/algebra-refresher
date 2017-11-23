@@ -1,7 +1,12 @@
 from decimal import Decimal, getcontext
 from vector import Vector
 
-getcontext().prec = 15
+getcontext().prec = 30
+
+
+class MyDecimal(Decimal):
+    def is_near_zero(self, eps=1e-10):
+        return abs(self) < eps
 
 
 class Line(object):
@@ -12,7 +17,7 @@ class Line(object):
         self.dimension = 2
 
         if not normal_vector:
-            all_zeros = ['0']*self.dimension
+            all_zeros = ['0'] * self.dimension
             normal_vector = Vector(all_zeros)
         self.normal_vector = normal_vector
 
@@ -22,66 +27,22 @@ class Line(object):
 
         self.set_basepoint()
 
-    def __eq__(self, ell):
-        if self.normal_vector.is_zero():
-            if not ell.normal_vector.is_zero():
-                return False
-            else:
-                diff = self.constant_term - ell.constant
-                return MyDecimal(diff).is_near_zero()
-        elif ell.normal_vector.is_zero():
-            return false
-
-        if not self.is_parallel_to(ell):
-            return False
-
-        x0 = self.basepoint
-        y0 = ell.basepoint
-        basepoint_difference = x0.__sub__(y0)
-
-        n = self.normal_vector
-        return basepoint_difference.is_orthogonal_to(n)
-
-    def intersection_with(self, ell):
-        # try:
-        A, B = self.normal_vector.coordinates
-        C, D, ell.normal_vector.coordinates
-        k1 = self.constant_term
-        k2 = ell.constant_term
-
-        x_numerator = D*k1 - B*k2
-        y_numerator = -C*k1 + A*k2
-        one_over_denom = Decimal('1')/(A*D - B*C)
-
-        return Vector([x_numerator, y_numerator]).times_scaler(one_over_denom)
-        # except ZeroDivisionError:
-        #     if self == ell:
-        #         return self
-        #     else:
-        #         return None
-
-    def is_parallel_to(self, ell):
-        n1 = self.normal_vector
-        n2 = ell.normal_vector
-        return n1.is_parallel_to(n2)
-
     def set_basepoint(self):
-        # try:
-        n = self.normal_vector
-        c = self.constant_term
-        basepoint_coords = ['0']*self.dimension
+        try:
+            n = self.normal_vector
+            c = self.constant_term
+            basepoint_coords = ['0'] * self.dimension
 
-        initial_index = Line.first_nonzero_index(n)
-        initial_coefficient = n[initial_index]
+            initial_index = Line.first_nonzero_index(n)
+            initial_coefficient = n[initial_index]
+            basepoint_coords[initial_index] = c / initial_coefficient
+            self.basepoint = Vector(basepoint_coords)
 
-        basepoint_coords[initial_index] = c/initial_coefficient
-        self.basepoint = Vector(basepoint_coords)
-
-        # except Exception as e:
-        #     if str(e) == Line.NO_NONZERO_ELTS_FOUND_MSG:
-        #         self.basepoint = None
-        #     else:
-        #         raise e
+        except Exception as e:
+            if str(e) == Line.NO_NONZERO_ELTS_FOUND_MSG:
+                self.basepoint = None
+            else:
+                raise e
 
     def __str__(self):
 
@@ -111,8 +72,11 @@ class Line(object):
 
         try:
             initial_index = Line.first_nonzero_index(n)
-            terms = [write_coefficient(n[i], is_initial_term=(i==initial_index)) + 'x_{}'.format(i+1)
-                     for i in range(self.dimension) if round(n[i], num_decimal_places) != 0]
+            terms = [write_coefficient(n[i],
+                                       is_initial_term=(i == initial_index)) +
+                     'x_{}'.format(i + 1)
+                     for i in range(self.dimension)
+                     if round(n[i], num_decimal_places) != 0]
             output = ' '.join(terms)
 
         except Exception as e:
@@ -128,7 +92,6 @@ class Line(object):
 
         return output
 
-
     @staticmethod
     def first_nonzero_index(iterable):
         for k, item in enumerate(iterable):
@@ -136,18 +99,71 @@ class Line(object):
                 return k
         raise Exception(Line.NO_NONZERO_ELTS_FOUND_MSG)
 
+    def is_parallel(self, line2):
+        return self.normal_vector.is_parallel(line2.normal_vector)
 
-class MyDecimal(Decimal):
-    def is_near_zero(self, eps=1e-10):
-        return abs(self) < eps
+    def __eq__(self, line2):
+        if self.normal_vector.is_zero():
+            if not line2.normal_vector.is_zero():
+                return False
+
+            diff = self.constant_term - line2.constant_term
+            return MyDecimal(diff).is_near_zero()
+
+        elif line2.normal_vector.is_zero():
+            return False
+
+        if not self.is_parallel(line2):
+            return False
+
+        basepoint_difference = self.basepoint.minus(line2.basepoint)
+        return basepoint_difference.is_orthogonal(self.normal_vector)
+
+    def intersection(self, line2):
+
+        a, b = self.normal_vector.coordinates
+        c, d = line2.normal_vector.coordinates
+        k1 = self.constant_term
+        k2 = line2.constant_term
+        denom = ((a * d) - (b * c))
+
+        if MyDecimal(denom).is_near_zero():
+            if self == line2:
+                return self
+            else:
+                return None
+
+        one_over_denom = Decimal('1') / ((a * d) - (b * c))
+        x_num = (d * k1 - b * k2)
+        y_num = (-c * k1 + a * k2)
+
+        return Vector([x_num, y_num]).times_scalar(one_over_denom)
 
 
-v = Vector(['4.046', '2.836'])
-w = Vector(['10.115', '7.09'])
+# first system
+# 4.046x + 2.836y = 1.21
+# 10.115x + 7.09y = 3.025
 
-ell1 = Line(normal_vector=v, constant_term='1.21')
-# ell2 = Line(normal_vector=w, constant_term='3.025')
-# print("intersection 1: {}".format(ell1.intersection(ell2)))
+line1 = Line(Vector([4.046, 2.836]), 1.21)
+line2 = Line(Vector([10.115, 7.09]), 3.025)
+
+print 'first system instersects in: {}'.format(line1.intersection(line2))
 
 
+# second system
+# 7.204x + 3.182y = 8.68
+# 8.172x + 4.114y = 9.883
 
+line3 = Line(Vector([7.204, 3.182]), 8.68)
+line4 = Line(Vector([8.172, 4.114]), 9.883)
+
+print 'second system instersects in: {}'.format(line3.intersection(line4))
+
+# third system
+# 1.182x + 5.562y = 6.744
+# 1.773x + 8.343y = 9.525
+
+line5 = Line(Vector([1.182, 5.562]), 6.744)
+line6 = Line(Vector([1.773, 8.343]), 9.525)
+
+print 'third system instersects in: {}'.format(line5.intersection(line6))
