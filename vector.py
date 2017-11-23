@@ -1,7 +1,6 @@
 from math import sqrt, acos, pi
 from decimal import Decimal, getcontext
 
-
 getcontext().prec = 15
 
 
@@ -111,16 +110,16 @@ class Vector(object):
         # (3) then multiply u but the result of the previous product
         #     result = (v.u) . u
 
-        try:
+        # try:
             u = basis.normalize()
             weight = self.dot(u)
             return u.times_scaler(weight)
 
-        except Exception as e:
-            if str(e) == self.CANNOT_NORMALIZE_ZERO_VECTOR_MSG:
-                raise Exception(self.NO_UNIQUE_PARALLEL_COMPONENT_MSG)
-            else:
-                raise e        
+        # except Exception as e:
+        #     if str(e) == self.CANNOT_NORMALIZE_ZERO_VECTOR_MSG:
+        #         raise Exception(self.NO_UNIQUE_PARALLEL_COMPONENT_MSG)
+        #     else:
+        #         raise e        
 
     def area_of_triangle_with(self, v):
         return self.area_of_parallelogram_with(v) / Decimal('2.0')
@@ -130,40 +129,40 @@ class Vector(object):
         return cross_product.magnitude()
 
     def cross(self, v):
-        try:
-            x1, y1, z1 = self.coordinates
-            x2, y2, z2 = v.coordinates
-            new_coordinates = [
-                y1*z2 - y2*z1,
-                -(x1*z2 - x2*z1),
-                x1*y2 - x2*y1
-            ]
+        # try:
+        x1, y1, z1 = self.coordinates
+        x2, y2, z2 = v.coordinates
+        new_coordinates = [
+            y1*z2 - y2*z1,
+            -(x1*z2 - x2*z1),
+            x1*y2 - x2*y1
+        ]
 
-            return Vector(new_coordinates)
-        except ValueError as e:
-            msg = str(e)
-            if msg == "need more than 2 values to unpack":
-                self_embedded_in_R3 = Vector(self.coordinates + ('0',))
-                v_embedded_in_R3 = Vector(v.coordinates + ('0',))
-                return self_embedded_in_R3.cross(v_embedded_in_R3)
-            elif (
-                    msg == 'too many values to unpack',
-                    msg == 'need more than 1 value to unpack'
-            ):
-                raise Exception(self.ONLY_DEFINED_IN_TWO_THREE_DIMS_MSG)
-            else:
-                raise e
+        return Vector(new_coordinates)
+        # except ValueError as e:
+        #     msg = str(e)
+        #     if msg == "need more than 2 values to unpack":
+        #         self_embedded_in_R3 = Vector(self.coordinates + ('0',))
+        #         v_embedded_in_R3 = Vector(v.coordinates + ('0',))
+        #         return self_embedded_in_R3.cross(v_embedded_in_R3)
+        #     elif (
+        #             msg == 'too many values to unpack',
+        #             msg == 'need more than 1 value to unpack'
+        #     ):
+        #         raise Exception(self.ONLY_DEFINED_IN_TWO_THREE_DIMS_MSG)
+        #     else:
+        #         raise e
         
         
 
-v = Vector([3.009, -6.172, 3.692])
-w = Vector([6.404, -9.144, 2.759])
+# v = Vector([3.009, -6.172, 3.692])
+# w = Vector([6.404, -9.144, 2.759])
 
-print(v.cross(w))
-print("-------------")
-print(v.area_of_parallelogram_with(w))
-print("-------------")
-print(v.area_of_triangle_with(w))
+# print(v.cross(w))
+# print("-------------")
+# print(v.area_of_parallelogram_with(w))
+# print("-------------")
+# print(v.area_of_triangle_with(w))
 # print("#1")
 # v = Vector([3.039, 1.879])
 # w = Vector([0.825, 2.036])
